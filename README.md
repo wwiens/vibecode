@@ -19,10 +19,18 @@ PORT=8000 gunicorn app:app --bind 0.0.0.0:$PORT
 
 ## Deployment (Railway)
 
+Live at https://vibecode-production-652a.up.railway.app
+
+- Every push to `main` on GitHub triggers a new deploy. No CLI step needed.
 - Railway detects Python from `requirements.txt` and uses the version in `.python-version`.
-- `railway.json` sets the start command (gunicorn) and the health check (`/health`).
-- Railway injects a `PORT` environment variable, and the app binds to `0.0.0.0:$PORT`. Don't hardcode a port.
-- Every push to `main` triggers a new deploy.
+- Railway injects a `PORT` environment variable, and gunicorn binds to `0.0.0.0:$PORT`. Don't hardcode a port.
+- Service settings (start command, `/health` check, restart policy, domain) are stored on the Railway service and described in [.railway/railway.py](.railway/railway.py). That file is **not** read on deploy. If you change it, push the change to Railway yourself:
+
+  ```bash
+  pip install railway-sdk
+  railway config plan    # preview
+  railway config apply   # apply
+  ```
 
 ## Endpoints
 

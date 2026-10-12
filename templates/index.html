@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vibe Coding</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <main>
+    <header class="hero">
+      <p class="eyebrow">// est. the moment you stopped typing semicolons</p>
+      <h1>Vibe<span>Coding</span></h1>
+      <p class="tagline">Forget the syntax. Describe what you want, steer the result, and ship it.</p>
+    </header>
+
+    <section class="vibe-card">
+      <p class="label">Today's vibe</p>
+      <p id="vibe" class="vibe">{{ vibe }}</p>
+      <button id="new-vibe" type="button">Get a new vibe ✨</button>
+    </section>
+
+    <section class="steps">
+      <h2>The workflow</h2>
+      <ol>
+        <li><span class="num">01</span><div><strong>Describe</strong>Say what you want in plain English. Vibes count as specs.</div></li>
+        <li><span class="num">02</span><div><strong>Generate</strong>Let the AI write the boring parts. And the interesting parts.</div></li>
+        <li><span class="num">03</span><div><strong>Steer</strong>Run it, look at it, say "no, more like <em>this</em>."</div></li>
+        <li><span class="num">04</span><div><strong>Ship</strong>git push. Railway deploys it. Done before your coffee cools.</div></li>
+      </ol>
+    </section>
+
+    <section class="meter">
+      <h2>Vibe meter</h2>
+      <div class="bar"><span>Flow state</span><div class="track"><div class="fill" style="--w: 94%"></div></div></div>
+      <div class="bar"><span>Keystrokes</span><div class="track"><div class="fill" style="--w: 12%"></div></div></div>
+      <div class="bar"><span>Shipping speed</span><div class="track"><div class="fill" style="--w: 88%"></div></div></div>
+      <div class="bar"><span>Reading the diff</span><div class="track"><div class="fill" style="--w: 70%"></div></div></div>
+    </section>
+
+    <footer>
+      <p>Built with Python + Flask · deployed on Railway · powered by vibes</p>
+    </footer>
+  </main>
+
+  <script>
+    const vibeEl = document.getElementById("vibe");
+    document.getElementById("new-vibe").addEventListener("click", async () => {
+      vibeEl.classList.add("fade");
+      try {
+        const res = await fetch("/api/vibe");
+        const data = await res.json();
+        setTimeout(() => {
+          vibeEl.textContent = data.vibe;
+          vibeEl.classList.remove("fade");
+        }, 200);
+      } catch {
+        vibeEl.classList.remove("fade");
+      }
+    });
+  </script>
+</body>
+</html>

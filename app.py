@@ -6,7 +6,7 @@ from flask import Flask, jsonify, render_template
 app = Flask(__name__)
 
 VIBES = [
-    "Ship it. The tests are vibes-based anyway.",
+    "Ship it! The tests are vibes-based anyway.",
     "Describe the feeling, let the model write the for-loop.",
     "It's not a bug, it's an emergent feature.",
     "Accept all. Run. Squint. Repeat.",

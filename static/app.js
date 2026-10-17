@@ -16,7 +16,7 @@ function toast(message) {
 }
 async function api(path, options = {}) {
   const separator = path.includes('?') ? '&' : '?';
-  const response = await fetch(`/api/${path}${separator}profile=${state.profileId}`, {...options, headers:{'Content-Type':'application/json', ...options.headers}});
+  const response = await fetch(`/api/${path}${separator}profile=${state.profileId}`, {...options, headers:{...(options.body instanceof FormData ? {} : {'Content-Type':'application/json'}), ...options.headers}});
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
   return data;
@@ -24,10 +24,11 @@ async function api(path, options = {}) {
 function report(error) {toast(error.message || 'Something went wrong. Please try again.');}
 function titleById(id) {return state.titles.find(t => t.id === id);}
 function saved(id) {return state.saved.find(s => s.title_id === id) || {};}
+function episodeLabel(item,key) {const episode=item.uploaded?item.episodes.find(e=>e.key===key):null;return episode?`S${episode.season}:E${episode.episode}`:`Episode ${key}`;}
 function latestProgress(id) {return state.progress.find(p => p.title_id === id);}
 function openDialog(dialog) {previousFocus = document.activeElement; if (!dialog.open) dialog.showModal();}
 function closeDialog(dialog) {dialog.close(); if (previousFocus?.isConnected) previousFocus.focus({preventScroll:true});}
-function route() {return ['home','series','movies','new','list'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';}
+function route() {return ['home','series','movies','new','list','uploads'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';}
 function setRoute(value) {
   if (location.hash === `#${value}`) render();
   else location.hash = value;
@@ -48,6 +49,7 @@ function updateProfileUI() {
   if (!state.profile) return;
   $('#headerAvatar').className = `avatar ${state.profile.color}`;
   $('#profileButton').setAttribute('aria-label', `${state.profile.name}: switch or manage profiles`);
+  $('#libraryLink').hidden = !!state.profile.kids;
   $('#kidsButton').textContent = state.profile.kids ? 'Kids mode' : 'Kids';
   const count = state.saved.filter(s => s.in_list).length;
   $('#listCount').textContent = count; $('#listCount').hidden = !count;
@@ -68,7 +70,7 @@ function updateHero() {
   $$('.hero-dot').forEach(d => {d.classList.toggle('active', d.dataset.feature === item.id); d.setAttribute('aria-pressed', d.dataset.feature === item.id); d.hidden = !titleById(d.dataset.feature);});
 }
 function meta(item) {
-  return `<span class="match">${item.match}% match</span><span>${item.year}</span><span class="rating">${item.rating}</span><span>${item.duration}</span><span class="quality">4K</span>`;
+  return `<span class="match">${item.match}% match</span><span>${item.year}</span><span class="rating">${item.rating}</span><span>${item.duration}</span>${item.uploaded ? '<span class="quality">YOUR VIDEO</span>' : '<span class="quality">4K</span>'}`;
 }
 function addButton(item) {
   const inList = !!saved(item.id).in_list;
@@ -89,7 +91,7 @@ function card(item, {rank, progress, grid = false} = {}) {
     </button>
     ${progress ? `<button class="remove-progress" data-remove-progress="${item.id}" aria-label="Remove ${text(item.title)} from Continue Watching">${icon('close')}</button><div class="progress-line"><span style="width:${done}%"></span></div>` : ''}
     ${grid ? `<button class="card-name" data-detail="${item.id}">${text(item.title)}</button>` : ''}
-    <div class="card-bottom"><p>${progress ? `<b>${item.type === 'series' ? `Episode ${progress.episode}` : 'Preview'}</b><span>·</span>${Math.max(1, Math.ceil((progress.duration-progress.position)/60))}m left` : `<b>${text(item.genres[0])}</b><span>·</span>${item.type === 'series' ? item.duration : item.year}`}</p>${addButton(item)}</div>
+    <div class="card-bottom"><p>${progress ? `<b>${item.type === 'series' ? episodeLabel(item,progress.episode) : item.uploaded ? 'Video' : 'Preview'}</b><span>·</span>${Math.max(1, Math.ceil((progress.duration-progress.position)/60))}m left` : `<b>${text(item.genres[0])}</b><span>·</span>${item.type === 'series' ? item.duration : item.year}`}</p>${addButton(item)}</div>
   </article>`;
 }
 function collection(name, items, options = {}) {
@@ -106,6 +108,7 @@ function renderHome() {
   const preferredGenres = state.saved.filter(s => s.liked).map(s => titleById(s.title_id)?.genres[0]).filter(Boolean);
   const recommended = preferredGenres.length ? [...all].sort((a,b) => Number(preferredGenres.includes(b.genres[0])) - Number(preferredGenres.includes(a.genres[0]))) : pick(['stranger-things','wednesday','breaking-bad','dark','queens-gambit','arcane','one-piece','squid-game']);
   let html = collection(`Continue watching for ${state.profile.name}`, continuing, {continue:true});
+  html += collection('From your library',all.filter(t=>t.uploaded),{tag:'YOUR UPLOADS',route:'uploads'});
   html += collection('Your next obsession', recommended.length ? recommended : all, {tag:'PICKED FOR YOU',route:'series'});
   html += collection('Trending now', pick(['dune','squid-game','interstellar','oppenheimer','batman','spiderverse','inception','knives-out']), {route:'new'});
   html += collection('Top 10 to lose yourself in', pick(['wednesday','stranger-things','dune','squid-game','dark','breaking-bad','arcane','queens-gambit','one-piece','peaky-blinders']), {ranked:true,tag:'THE MOST WATCHED',route:'new'});
@@ -121,12 +124,16 @@ async function render() {
   document.body.classList.toggle('browse-mode', !!browse);
   document.body.classList.toggle('search-open', state.searchOpen);
   $('#hero').hidden = !!browse;
+  $('#uploadManager').hidden = page !== 'uploads';
+  $('#collections').hidden = page === 'uploads';
+  $('#discoveryBar').hidden = page === 'uploads';
   $('#browseHeading').hidden = !browse;
   $('#editorialBanner').hidden = !!browse || !!state.profile.kids;
   $$('.main-nav a').forEach(a => a.classList.toggle('active', a.dataset.nav === page));
-  const titleMap = {home:'Discover your next favorite',series:'TV Shows',movies:'Movies',new:'New & Popular',list:'My List'};
+  const titleMap = {home:'Discover your next favorite',series:'TV Shows',movies:'Movies',new:'New & Popular',list:'My List',uploads:'Your video library'};
   $('#browseTitle').textContent = state.searchOpen ? state.query ? `Results for “${state.query}”` : 'What are you in the mood for?' : state.genre || titleMap[page];
   $('#browseEyebrow').textContent = page === 'list' ? 'THE STORIES YOU’RE SAVING FOR LATER' : state.profile.kids ? 'LITTLE VIEWERS, BIG ADVENTURES' : 'FIND YOUR NEXT FAVORITE';
+  if (page === 'uploads') {$('#browseEyebrow').textContent = 'A HOME FOR YOUR OWN STORIES';uploadManager.render();return;}
   if (!browse) {renderHome(); updateHero(); return;}
   let items = [...state.titles];
   const params = new URLSearchParams();
@@ -170,15 +177,18 @@ function syncDetailActions() {
 }
 function showDetails(id) {
   const item = titleById(id); if (!item) return;
-  detailId = id; detailSeason = 1;
+  detailId = id; detailSeason = item.uploaded ? item.episodes[0].season : 1;
   const similar = state.titles.filter(t => t.id !== id && t.genres.some(g => item.genres.includes(g))).slice(0,3);
-  $('#detailDialog').innerHTML = `<button class="circle-button dialog-close" data-close-detail aria-label="Close title details">${icon('close')}</button><div class="detail-visual"><img src="${item.backdrop}" alt=""><div class="detail-visual-content"><div class="eyebrow">${item.original ? 'N · A NETFLIX ORIGINAL' : 'YOUR NEXT GREAT WATCH'}</div><h2>${text(item.title)}</h2><div class="detail-actions"><button class="button button-white" data-play="${id}">${icon('play')}${latestProgress(id)?.position > .5 ? 'Resume preview' : 'Play preview'}</button><button class="circle-button" data-detail-save="${id}" aria-label="Add to My List"></button><button class="circle-button" data-like="${id}" aria-label="Like this title">${icon('heart')}</button></div></div></div><div class="detail-body"><div class="detail-overview"><div><div class="hero-meta">${meta(item)}</div><p class="detail-description">${text(item.description)}</p></div><div class="detail-facts"><p><span>Cast: </span>${text(item.cast)}</p><p><span>Genres: </span>${text(item.genres.join(', '))}</p><p><span>This story is: </span>${item.genres.includes('Thriller') ? 'Suspenseful, gripping, unforgettable' : 'Immersive, imaginative, unforgettable'}</p></div></div><p class="demo-note">CLASSROOM PREVIEW · Every title plays the openly licensed Sintel trailer. ${item.type === 'series' ? 'Episode navigation below is simulated; progress is saved separately for each preview chapter.' : 'Your list, likes, and viewing progress are saved for this profile.'}</p>${item.type === 'series' ? `<div class="episodes-heading"><h3>Episodes <small class="preview-label">DEMO CHAPTERS</small></h3><select id="seasonSelect" aria-label="Season">${Array.from({length:item.seasons},(_,i) => `<option value="${i+1}">Season ${i+1}</option>`).join('')}</select></div><div id="episodes"></div>` : ''}${similar.length ? `<h3 class="related-heading">More like this</h3><div class="related-row">${similar.map(t => card(t)).join('')}</div>` : ''}</div>`;
+  $('#detailDialog').innerHTML = `<button class="circle-button dialog-close" data-close-detail aria-label="Close title details">${icon('close')}</button><div class="detail-visual"><img src="${item.backdrop}" alt=""><div class="detail-visual-content"><div class="eyebrow">${item.original ? 'N · A NETFLIX ORIGINAL' : 'YOUR NEXT GREAT WATCH'}</div><h2>${text(item.title)}</h2><div class="detail-actions"><button class="button button-white" data-play="${id}">${icon('play')}${latestProgress(id)?.position > .5 ? item.uploaded ? 'Resume' : 'Resume preview' : item.uploaded ? 'Play video' : 'Play preview'}</button><button class="circle-button" data-detail-save="${id}" aria-label="Add to My List"></button><button class="circle-button" data-like="${id}" aria-label="Like this title">${icon('heart')}</button></div></div></div><div class="detail-body"><div class="detail-overview"><div><div class="hero-meta">${meta(item)}</div><p class="detail-description">${text(item.description)}</p></div><div class="detail-facts"><p><span>Cast: </span>${text(item.cast)}</p><p><span>Genres: </span>${text(item.genres.join(', '))}</p><p><span>This story is: </span>${item.genres.includes('Thriller') ? 'Suspenseful, gripping, unforgettable' : 'Immersive, imaginative, unforgettable'}</p></div></div><p class="demo-note">${item.uploaded ? 'FROM YOUR LIBRARY · This title plays your uploaded video. Watchlists, likes, and viewing progress are saved for this profile.' : 'CLASSROOM PREVIEW · Every built-in title plays the openly licensed Sintel trailer. ' + (item.type === 'series' ? 'Episode navigation below is simulated; progress is saved separately for each preview chapter.' : 'Your list, likes, and viewing progress are saved for this profile.')}</p>${item.type === 'series' ? `<div class="episodes-heading"><h3>Episodes ${item.uploaded ? '' : '<small class="preview-label">DEMO CHAPTERS</small>'}</h3><select id="seasonSelect" aria-label="Season">${(item.uploaded ? [...new Set(item.episodes.map(e=>e.season))] : Array.from({length:item.seasons},(_,i)=>i+1)).map(season => `<option value="${season}">Season ${season}</option>`).join('')}</select></div><div id="episodes"></div>` : ''}${similar.length ? `<h3 class="related-heading">More like this</h3><div class="related-row">${similar.map(t => card(t)).join('')}</div>` : ''}</div>`;
   syncDetailActions(); if (item.type === 'series') renderEpisodes();
   $('#detailDialog').scrollTop = 0; openDialog($('#detailDialog'));
 }
 function renderEpisodes() {
   const item = titleById(detailId); if (!item) return;
   const names = ['The beginning','A world beyond','Into the unknown','The turning point','An unexpected alliance','A new horizon'];
+  if(item.uploaded){
+    $('#episodes').innerHTML=item.episodes.filter(e=>e.season===detailSeason).map(e=>`<button class="episode" data-play="${item.id}" data-episode="${e.key}"><span class="episode-number">${e.episode}</span><span class="episode-thumbnail"><img src="${item.image}" alt="">${icon('play')}</span><span class="episode-info"><b>${text(e.episode_title || 'Episode '+e.episode)}</b><p>Season ${e.season} · Your uploaded video</p></span><span class="episode-duration">${Math.ceil(e.duration/60)}m</span></button>`).join('');return;
+  }
   $('#episodes').innerHTML = names.map((name,i) => {
     const number = (detailSeason-1)*6+i+1;
     const progress = state.progress.find(p => p.title_id === item.id && p.episode === number);
@@ -189,7 +199,9 @@ async function playTitle(id, episode) {
   const item = titleById(id); if (!item) return;
   if (playing) await persistProgress();
   const recent = latestProgress(id);
-  const ep = Number(episode) || recent?.episode || 1;
+  const requested = Number(episode) || recent?.episode || 1;
+  const uploadedEpisode = item.uploaded ? item.episodes.find(e=>e.key===requested) || item.episodes[0] : null;
+  const ep = uploadedEpisode?.key || requested;
   video.pause();
   playing = null;
   video.removeAttribute('src'); video.load();
@@ -197,11 +209,15 @@ async function playTitle(id, episode) {
   const progress = state.progress.find(p => p.title_id === id && p.episode === ep);
   if ($('#detailDialog').open) $('#detailDialog').close();
   $('#notificationPanel').hidden = true;
-  $('#playerHeading').textContent = `${item.title}${item.type === 'series' ? ` · S${Math.ceil(ep/6)}:E${(ep-1)%6+1}` : ''}`;
+  $('#playerHeading').textContent = `${item.title}${item.type === 'series' ? ` · S${uploadedEpisode?.season || Math.ceil(ep/6)}:E${uploadedEpisode?.episode || (ep-1)%6+1}` : ''}`;
   $('#playingTitle').textContent = item.title;
-  $('#nextEpisode').hidden = item.type !== 'series' || ep >= item.seasons * 6;
+  $('#nextEpisode').hidden = item.type !== 'series' || (item.uploaded ? item.episodes.findIndex(e=>e.key===ep) >= item.episodes.length-1 : ep >= item.seasons * 6);
+  $('#playerBadge').textContent = item.uploaded ? 'YOUR LIBRARY' : 'DEMO SCREENING';
+  $('#playerCredits').textContent = item.uploaded ? 'Playing your uploaded video · Progress is saved to this profile.' : 'Sintel trailer · Blender Foundation · CC BY 3.0. Commercial titles use this open-film preview.';
+  if(item.uploaded) $('#demoCaptions').removeAttribute('src');else $('#demoCaptions').src='/static/video/credits.vtt';
   $('#playerError').hidden = true;
-  video.src = '/static/video/sintel-trailer.mp4'; video.load();
+  $('#playerError').textContent = item.uploaded ? 'This browser could not play the uploaded video. Try an MP4 with H.264/AAC or a supported WebM codec.' : 'We couldn’t play this preview. Please try again or check your browser’s video support.';
+  video.src = item.uploaded ? `${uploadedEpisode.video_url}?profile=${state.profileId}` : '/static/video/sintel-trailer.mp4'; video.load();
   video.playbackRate = Number($('#playbackSpeed').value);
   video.onloadedmetadata = () => {
     if (progress && progress.position < video.duration - 1) video.currentTime = progress.position;
@@ -239,6 +255,7 @@ function editProfile(id) {
 }
 async function chooseProfile(id) {
   try {
+    uploadManager.pause();
     state.profileId = Number(id); storage.set('netflix-profile',state.profileId);
     state.query = '';state.genre = '';state.feature = 'dune';state.searchOpen = false; $('#searchBar').hidden = true;$('#searchInput').value = '';
     await loadProfile();closeDialog($('#profilesDialog'));setRoute('home');window.scrollTo(0,0);
@@ -323,10 +340,10 @@ $('#aboutClose').addEventListener('click', () => closeDialog($('#aboutDialog')))
 $('#playerClose').addEventListener('click',closePlayer);
 $('#playerDialog').addEventListener('cancel',event => {event.preventDefault();closePlayer();});
 $('#playbackSpeed').addEventListener('change',event => video.playbackRate = Number(event.target.value));
-$('#nextEpisode').addEventListener('click',async () => {if (playing) {const {id,episode} = playing;await playTitle(id,episode+1);}});
+$('#nextEpisode').addEventListener('click',async () => {if (playing) {const {id,episode,item} = playing;const next = item.uploaded ? item.episodes[item.episodes.findIndex(e=>e.key===episode)+1]?.key : episode+1;if(next) await playTitle(id,next);}});
 video.addEventListener('timeupdate', () => {if (playing && video.currentTime-lastSaved >= 5) {lastSaved = video.currentTime;persistProgress();}});
 video.addEventListener('pause', () => {if (!closingPlayer) persistProgress();});
-video.addEventListener('ended', async () => {await persistProgress();toast('Preview complete. Explore another story or choose the next demo chapter.');});
+video.addEventListener('ended', async () => {await persistProgress();toast(playing?.item.uploaded ? 'Video complete. Explore another story or play the next episode.' : 'Preview complete. Explore another story or choose the next demo chapter.');});
 video.addEventListener('error', () => {if (video.hasAttribute('src')) $('#playerError').hidden = false;});
 window.addEventListener('pagehide',persistProgress);
 window.addEventListener('hashchange',render);

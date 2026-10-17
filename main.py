@@ -9,10 +9,16 @@ import sqlite3
 from flask import Flask, jsonify, render_template, request
 from werkzeug.exceptions import HTTPException
 from catalog import BY_ID, CATALOG, DEMO_VIDEO, GENRES
+from media_store import initialize_schema, register_media, uploaded_titles
 
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+
+@app.before_request
+def limit_json_requests():
+    if request.is_json:
+        request.max_content_length = 32 * 1024
 volume = os.getenv('RAILWAY_VOLUME_MOUNT_PATH')
 if (os.getenv('RAILWAY_ENVIRONMENT_ID') or os.getenv('RAILWAY_PROJECT_ID')) and not volume:
     raise RuntimeError('Persistent storage is not configured: attach a Railway volume at /data before deploying.')
@@ -51,6 +57,7 @@ def initialize():
                 PRIMARY KEY(profile_id, title_id, episode)
             );
         ''')
+        initialize_schema(db)
         if not db.execute('SELECT 1 FROM profiles LIMIT 1').fetchone():
             db.execute("INSERT OR IGNORE INTO profiles(id,name,color) VALUES (1,'Alex','blue')")
             db.execute("INSERT OR IGNORE INTO profiles(id,name,color) VALUES (2,'Movie night','purple')")
@@ -68,7 +75,7 @@ def input_error(error):
 
 @app.errorhandler(HTTPException)
 def http_error(error):
-    if request.path.startswith('/api/'):
+    if request.path.startswith(('/api/', '/media/')):
         return jsonify(error=error.description), error.code
     return error
 
@@ -99,8 +106,11 @@ def get_profile(db, value=None):
 def allowed(profile, item):
     return not profile['kids'] or item.get('family', False)
 
-def get_title(profile, id):
-    item = BY_ID.get(id)
+def all_titles(db):
+    return CATALOG + uploaded_titles(db)
+
+def get_title(profile, id, db):
+    item = BY_ID.get(id) or next((t for t in uploaded_titles(db) if t['id'] == id), None)
     if not item or not allowed(profile, item):
         raise InputError('This title is not available for this profile.')
     return item
@@ -119,13 +129,14 @@ def health():
 def catalog():
     with database() as db:
         profile = get_profile(db)
+        available = all_titles(db)
     query = request.args.get('q', '').strip().casefold()[:100]
     kind, genre = request.args.get('type', ''), request.args.get('genre', '')
-    items = [item for item in CATALOG if allowed(profile, item)
+    items = [item for item in available if allowed(profile, item)
              and (not kind or item['type'] == kind)
              and (not genre or genre in item['genres'])
              and (not query or query in ' '.join([item['title'], item['cast'], *item['genres']]).casefold())]
-    return jsonify(titles=items, genres=GENRES, demo_video=DEMO_VIDEO)
+    return jsonify(titles=items, genres=sorted(set(GENRES) | {g for t in available if allowed(profile,t) for g in t['genres']}), demo_video=DEMO_VIDEO)
 
 @app.get('/api/profiles')
 def profiles():
@@ -184,7 +195,7 @@ def state():
         profile = get_profile(db)
         saved = [dict(r) for r in db.execute('SELECT * FROM saved WHERE profile_id=?', (profile['id'],))]
         progress = [dict(r) for r in db.execute('SELECT * FROM progress WHERE profile_id=? ORDER BY updated_at DESC, rowid DESC', (profile['id'],))]
-    ids = {item['id'] for item in CATALOG if allowed(profile, item)}
+        ids = {item['id'] for item in all_titles(db) if allowed(profile, item)}
     return jsonify(profile=profile, saved=[r for r in saved if r['title_id'] in ids],
                    progress=[r for r in progress if r['title_id'] in ids])
 
@@ -193,7 +204,7 @@ def save(id):
     data = body()
     with database() as db:
         profile = get_profile(db)
-        get_title(profile, id)
+        get_title(profile, id, db)
         current = db.execute('SELECT * FROM saved WHERE profile_id=? AND title_id=?', (profile['id'], id)).fetchone()
         values = dict(current) if current else dict(in_list=0, liked=0)
         for key in ('in_list', 'liked'):
@@ -211,8 +222,10 @@ def save_progress(id):
     data = body()
     with database() as db:
         profile = get_profile(db)
-        item = get_title(profile, id)
-        episode = integer(data.get('episode', 1), 'Episode', maximum=item.get('seasons', 1) * 6 if item['type'] == 'series' else 1)
+        item = get_title(profile, id, db)
+        episode = integer(data.get('episode', 1), 'Episode', maximum=1000000 if item.get('uploaded') else item.get('seasons', 1) * 6 if item['type'] == 'series' else 1)
+        if item.get('uploaded') and episode not in {e['key'] for e in item['episodes']}:
+            raise InputError('That episode is not available for this title.')
         try:
             position, duration = float(data.get('position', 0)), float(data.get('duration', 0))
             if not all(math.isfinite(v) for v in (position, duration)) or not 0 <= position <= duration <= 86400:
@@ -230,6 +243,8 @@ def clear_progress(id):
         profile = get_profile(db)
         db.execute('DELETE FROM progress WHERE profile_id=? AND title_id=?', (profile['id'], id))
     return jsonify(ok=True)
+
+register_media(app, database, lambda: DATA_DIR, get_profile, integer, body)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', '8000')), debug=False)

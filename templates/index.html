@@ -3,65 +3,82 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Vibe Coding</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta name="theme-color" content="#101010">
+  <meta name="description" content="A cinematic Netflix-inspired streaming demo. Find your next obsession, build your list, and make movie night yours.">
+  <title>Netflix — A world of stories</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
 </head>
 <body>
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="orb orb-3"></div>
-
-  <main>
-    <header class="hero">
-      <p class="eyebrow">// est. the moment you stopped typing semicolons</p>
-      <h1>Vibe<span>Coding</span></h1>
-      <p class="tagline">Forget the syntax. Describe what you want, steer the result, and ship it.</p>
-    </header>
-
-    <section class="vibe-card">
-      <p class="label">Today's vibe...</p>
-      <p id="vibe" class="vibe">{{ vibe }}</p>
-      <button id="new-vibe" type="button">Get a new vibe ✨</button>
+  <svg class="icon-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 4 13 8-13 8Z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="m5 9 7 7 7-7"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 4 5 9H2v6h3l6 5ZM15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 8H3c0-1 3-1 3-8Zm4 11h4"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="m17 3 4 4-4 4M3 7h3c5 0 7 10 12 10h3m-4-4 4 4-4 4M3 17h3c2 0 4-3 6-5m3-4c1-1 2-1 3-1h3"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="m15 4 5 5M4 20l5-1L21 7l-5-5L4 14Z"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M20 12H4m6-6-6 6 6 6"/></symbol>
+  </defs></svg>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="header" id="header">
+    <a href="#home" class="wordmark" aria-label="Netflix home">NETFLIX</a>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="#home" data-nav="home" class="active">Home</a>
+      <a href="#series" data-nav="series">TV Shows</a>
+      <a href="#movies" data-nav="movies">Movies</a>
+      <a href="#new" data-nav="new">New & Popular</a>
+      <a href="#list" data-nav="list">My List <span class="list-count" id="listCount" hidden>0</span></a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-button" id="searchButton" aria-label="Search titles"><svg><use href="#i-search"/></svg></button>
+      <button class="kids-link" id="kidsButton">Kids</button>
+      <div class="notification-wrap">
+        <button class="icon-button notification-button" id="notificationButton" aria-label="Notifications" aria-expanded="false"><svg><use href="#i-bell"/></svg><span class="notification-dot"></span></button>
+        <div class="dropdown notification-panel" id="notificationPanel" hidden><h3>Made for your next movie night</h3><button class="notification-item" data-detail="dune"><img src="/static/images/dune.jpg" alt=""><span><b>Big screen. Bigger story.</b><small>Discover Dune: Part Two</small></span></button><button class="notification-item" data-detail="stranger-things"><img src="/static/images/stranger-things.jpg" alt=""><span><b>Welcome to the Upside Down</b><small>Your next binge starts here</small></span></button></div>
+      </div>
+      <button class="profile-button" id="profileButton" aria-label="Switch or manage profiles"><span class="avatar blue" id="headerAvatar"><span class="avatar-face"></span></span><svg><use href="#i-down"/></svg></button>
+    </div>
+  </header>
+  <div class="search-bar" id="searchBar" hidden>
+    <svg><use href="#i-search"/></svg><input id="searchInput" type="search" placeholder="Titles, people, genres" autocomplete="off" maxlength="100" aria-label="Search titles, people, or genres"><button class="icon-button" id="closeSearch" aria-label="Close search"><svg><use href="#i-close"/></svg></button>
+  </div>
+  <main id="main" tabindex="-1">
+    <section class="hero" id="hero" aria-label="Featured title">
+      <div class="hero-art" id="heroArt"></div><div class="hero-shade"></div>
+      <div class="hero-content">
+        <div class="eyebrow"><span class="red-line"></span>THE SPOTLIGHT <span class="eyebrow-dot">•</span> EPIC STORIES, ENDLESS POSSIBILITIES</div>
+        <div class="hero-title" id="heroTitle"><span class="dune-lettering">DUNE</span><span class="dune-subtitle">PART TWO</span></div>
+        <div class="hero-meta" id="heroMeta"><span class="match">98% match</span><span>2024</span><span class="rating">PG-13</span><span>2h 46m</span><span class="quality">4K</span><span class="dolby">◖◗ ATMOS</span></div>
+        <h1 class="hero-tagline" id="heroTagline">Beyond fear. Beyond destiny.</h1>
+        <p class="hero-description" id="heroDescription">Paul Atreides unites with the Fremen to seek revenge and shape the future of the universe. Some destinies are bigger than one world.</p>
+        <div class="hero-buttons"><button class="button button-white" id="heroPlay"><svg><use href="#i-play"/></svg>Play now</button><button class="button button-glass" id="heroInfo"><svg><use href="#i-info"/></svg>More info</button><button class="circle-button hero-save" id="heroSave" aria-label="Add featured title to My List"><svg><use href="#i-plus"/></svg></button></div>
+        <div class="hero-trending"><span class="top-ten-small">TOP<br><b>10</b></span><span>#1 in Movies today</span></div>
+      </div>
+      <div class="hero-pagination" aria-label="Featured titles"><button class="hero-dot active" data-feature="dune" aria-label="Feature Dune: Part Two"></button><button class="hero-dot" data-feature="stranger-things" aria-label="Feature Stranger Things"></button><button class="hero-dot" data-feature="interstellar" aria-label="Feature Interstellar"></button></div>
+      <div class="hero-corner"><span class="hero-corner-label">YOUR FRONT ROW SEAT.</span><span class="hero-age" id="heroAge">13+</span></div>
     </section>
-
-    <section class="steps">
-      <h2>The workflow</h2>
-      <ol>
-        <li><span class="num">01</span><div><strong>Describe</strong>Say what you want in plain English. Vibes count as specs.</div></li>
-        <li><span class="num">02</span><div><strong>Generate</strong>Let the AI write the boring parts. And the interesting parts.</div></li>
-        <li><span class="num">03</span><div><strong>Steer</strong>Run it, look at it, say "no, more like <em>this</em>."</div></li>
-        <li><span class="num">04</span><div><strong>Ship</strong>git push. Railway deploys it. Done before your coffee cools.</div></li>
-      </ol>
-    </section>
-
-    <section class="meter">
-      <h2>Vibe meter</h2>
-      <div class="bar"><span>Flow state</span><div class="track"><div class="fill" style="--w: 94%"></div></div></div>
-      <div class="bar"><span>Keystrokes</span><div class="track"><div class="fill" style="--w: 12%"></div></div></div>
-      <div class="bar"><span>Shipping speed</span><div class="track"><div class="fill" style="--w: 88%"></div></div></div>
-      <div class="bar"><span>Reading the diff</span><div class="track"><div class="fill" style="--w: 70%"></div></div></div>
-    </section>
-
-    <footer>
-      <p>Built with Python + Flask · deployed on Railway · powered by vibes</p>
-    </footer>
+    <div class="content-area" id="contentArea">
+      <div class="discovery-bar" id="discoveryBar"><div class="discovery-greeting"><span class="live-dot"></span> A good night starts with a great story.</div><div class="discovery-controls"><button id="surpriseButton"><svg><use href="#i-shuffle"/></svg>Surprise me</button><span class="control-divider"></span><label class="genre-label"><select id="genreSelect" aria-label="Browse by genre"><option value="">All genres</option></select><svg><use href="#i-down"/></svg></label></div></div>
+      <div class="browse-heading" id="browseHeading" hidden><div><p class="eyebrow" id="browseEyebrow">FIND YOUR NEXT FAVORITE</p><h1 id="browseTitle">Movies</h1><p id="browseSubtitle"></p></div><svg><use href="#i-grid"/></svg></div>
+      <div id="collections" aria-live="polite"><div class="loading-state">Setting the scene<span class="loading-dots">…</span></div></div>
+      <section class="editorial-banner" id="editorialBanner"><div><span class="eyebrow">GREAT STORIES BRING US TOGETHER</span><h2>Make tonight a movie night.</h2><p>Find a new world. Meet an unforgettable character. Just press play.</p><button class="button button-white" id="movieNight">Explore movies <svg><use href="#i-chevron"/></svg></button></div><div class="editorial-art" aria-hidden="true"><img src="/static/images/interstellar.jpg" alt=""><img src="/static/images/oppenheimer.jpg" alt=""><img src="/static/images/dune.jpg" alt=""></div></section>
+    </div>
   </main>
-
-  <script>
-    const vibeEl = document.getElementById("vibe");
-    document.getElementById("new-vibe").addEventListener("click", async () => {
-      vibeEl.classList.add("fade");
-      try {
-        const res = await fetch("/api/vibe");
-        const data = await res.json();
-        setTimeout(() => {
-          vibeEl.textContent = data.vibe;
-          vibeEl.classList.remove("fade");
-        }, 200);
-      } catch {
-        vibeEl.classList.remove("fade");
-      }
-    });
-  </script>
+  <footer><div class="footer-top"><a href="#home" class="wordmark">NETFLIX</a><span>Stories worth staying in for.</span><button id="aboutButton">About this experience <svg><use href="#i-info"/></svg></button></div><div class="footer-bottom"><span>Independent classroom project · Not affiliated with Netflix.</span><span>Film artwork for demonstration · Playback features Sintel by Blender Studio.</span></div></footer>
+  <dialog class="detail-dialog" id="detailDialog" aria-label="Title details"></dialog>
+  <dialog class="profiles-dialog" id="profilesDialog" aria-label="Choose a profile"></dialog>
+  <dialog class="player-dialog" id="playerDialog" aria-label="Video player"><div class="player-top"><button class="player-back" id="playerClose"><svg><use href="#i-arrow"/></svg>Back to browse</button><span id="playerHeading"></span><span class="demo-badge">DEMO SCREENING</span></div><video id="videoPlayer" controls playsinline preload="metadata"><track kind="captions" src="/static/video/credits.vtt" srclang="en" label="English (demo credits)"></video><div class="player-bottom"><div><b id="playingTitle"></b><p>Sintel trailer · Blender Foundation · CC BY 3.0. Commercial titles use this open-film preview.</p></div><div class="player-options"><label>Playback speed <select id="playbackSpeed" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label><button class="button button-glass" id="nextEpisode" hidden>Next episode <svg><use href="#i-chevron"/></svg></button></div></div><p class="player-error" id="playerError" hidden>We couldn’t play this preview. Please try again or check your browser’s video support.</p></dialog>
+  <dialog class="about-dialog" id="aboutDialog"><button class="circle-button dialog-close" id="aboutClose" aria-label="Close about"><svg><use href="#i-close"/></svg></button><span class="wordmark">NETFLIX</span><p class="eyebrow">THE CLASSROOM EDITION</p><h2>A world of stories.<br>A little bit of code.</h2><p>A Netflix-inspired demo built with Python and Flask. Explore the catalog, create a profile, save a watchlist, and pick up where you left off.</p><p>All titles play the openly licensed <a href="https://studio.blender.org/films/sintel/" target="_blank" rel="noopener">Sintel trailer by Blender Studio</a> (CC BY 3.0), rather than the commercial films shown. Film artwork is sourced from TMDB and IMAX for this educational interface.</p><p class="about-note">This shared demo has no authentication. Use fictional profile names; anyone with the link can change demo data.</p></dialog>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <noscript><p class="noscript">Enable JavaScript to browse the catalog and use the streaming demo.</p></noscript>
 </body>
 </html>

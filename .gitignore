@@ -8,3 +8,7 @@ venv/
 .idea/
 .vscode/
 *.log
+.localdata/
+*.db
+*.db-shm
+*.db-wal

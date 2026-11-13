@@ -1,8 +1,20 @@
 {% extends "base.html" %}
 
+{% block title %}Your app, built by Claude{% endblock %}
+
 {% block content %}
-<main class="placeholder">
-  <h1>vibecode</h1>
-  <p>Something new is on the way.</p>
+<main class="hero">
+  <p class="kicker">Live build — runs through the session</p>
+  <p class="eyebrow">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>
+    Live demo
+  </p>
+  <h1>Your app, built by Claude</h1>
+  <p class="lede">You suggest an idea → I pick one → Claude builds it while we talk → we review it at the end</p>
+
+  <section class="callout">
+    <p class="callout-label">Put in the chat</p>
+    <p class="callout-text">An app you’d actually use. One sentence is enough.</p>
+  </section>
 </main>
 {% endblock %}

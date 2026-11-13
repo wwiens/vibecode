@@ -3,13 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}vibecode{% endblock %}</title>
+  <meta name="theme-color" content="#152b24">
+  <meta name="description" content="Turn a quick introduction into a lasting connection. Scan business cards and organize your event contacts with Folio.">
+  <title>{% block title %}Folio — Your network, in focus{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body data-storage="sqlite">
   {% block content %}{% endblock %}
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
 </body>
 </html>

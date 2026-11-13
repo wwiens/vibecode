@@ -28,6 +28,20 @@ DATABASE_PATH = DATA_DIR / "app.db"
 # Add CREATE TABLE IF NOT EXISTS statements here. Runs on every startup,
 # so it must be idempotent and must never drop or reset existing data.
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS contacts (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    company TEXT NOT NULL DEFAULT '',
+    title TEXT NOT NULL DEFAULT '',
+    email TEXT NOT NULL DEFAULT '',
+    phone TEXT NOT NULL DEFAULT '',
+    website TEXT NOT NULL DEFAULT '',
+    event TEXT NOT NULL DEFAULT '',
+    notes TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS contacts_unique_email
+ON contacts (lower(email)) WHERE email != '';
 """
 
 

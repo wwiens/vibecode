@@ -1,20 +1,67 @@
 {% extends "base.html" %}
-
-{% block title %}Your app, built by Claude{% endblock %}
-
 {% block content %}
-<main class="hero">
-  <p class="kicker">Live build — runs through the session</p>
-  <p class="eyebrow">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>
-    Live demo
-  </p>
-  <h1>Your app, built by Claude</h1>
-  <p class="lede">You suggest an idea → I pick one → Claude builds it while we talk → we review it at the end</p>
-
-  <section class="callout">
-    <p class="callout-label">Put in the chat</p>
-    <p class="callout-text">An app you’d actually use. One sentence is enough.</p>
-  </section>
-</main>
+<svg class="icon-defs" xmlns="http://www.w3.org/2000/svg"><defs>
+<symbol id="i-scan" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M7 9h10v6H7z"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m1-16a3 3 0 0 1 0 6m3 10v-3a6 6 0 0 0-2-4"/></symbol>
+<symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18M7 15h3m4 0h3"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m-4 4 4-4 4 4M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="m8 5 1-2h6l1 2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="4"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z"/><path d="m8 12 3 3 5-6"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+<symbol id="i-export" viewBox="0 0 24 24"><path d="M12 3v13m-4-4 4 4 4-4M4 16v5h16v-5"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+</defs></svg>
+<aside class="sidebar">
+  <a class="brand" href="#scan" aria-label="Folio home"><span class="brand-mark"><i></i><i></i></span>folio<span class="brand-dot">.</span></a>
+  <div class="sidebar-caption">MAKE EVERY HELLO COUNT</div>
+  <nav aria-label="Main navigation">
+    <button class="nav-item active" data-view="scan"><svg><use href="#i-scan"/></svg>Card scanner<span class="nav-live"></span></button>
+    <button class="nav-item" data-view="contacts"><svg><use href="#i-users"/></svg>My contacts<span class="count" id="nav-count">0</span></button>
+    <button class="nav-item" data-view="events"><svg><use href="#i-calendar"/></svg>Events</button>
+  </nav>
+  <div class="session-card"><span class="mini-label">YOUR CURRENT EVENT</span><span class="event-dot"></span><strong id="sidebar-event">General networking</strong><span>Keep your connections together.</span><button id="change-event">Change event <svg><use href="#i-arrow"/></svg></button></div>
+  <div class="sidebar-bottom"><div class="little-orbit">✳</div><p>A small card.<br><strong>A world of possibilities.</strong></p><div class="profile"><span class="profile-avatar">Y</span><div>Your workspace<small>Personal collection</small></div><svg><use href="#i-shield"/></svg></div></div>
+</aside>
+<div class="app-shell">
+  <header class="topbar"><span><span class="breadcrumb">Workspace</span><span class="slash">/</span><span id="breadcrumb-current">Card scanner</span></span><span class="storage-badge"><span></span><span id="storage-label">Saved to this workspace</span></span></header>
+  <main>
+    <section class="page-intro"><div><p class="eyebrow">LESS ADMIN. MORE CONNECTION.</p><h1 id="page-title">Meet. Scan. <span>Connect.</span></h1><p id="page-description">Turn business cards into your next big opportunity.</p></div><button class="button outline" id="manual-add"><svg><use href="#i-plus"/></svg>Add manually</button></section>
+    <div id="scan-view">
+      <div class="scan-layout">
+        <section class="scanner-panel" aria-label="Business card scanner">
+          <div class="scanner-heading"><div><span class="status-light"></span><span id="scanner-status">READY WHEN YOU ARE</span></div><span class="camera-mode">CARD SCANNER <span>01</span></span></div>
+          <div class="viewfinder" id="viewfinder">
+            <video id="camera" autoplay playsinline muted hidden></video>
+            <img id="captured" alt="Captured business card" hidden>
+            <div class="scan-frame" id="scan-frame"><i></i><i></i><i></i><i></i>
+              <div class="sample-card" id="sample-card"><div class="sample-top"><span class="sample-logo">a<span>↗</span></span><span class="sample-wordmark">arc studio</span></div><div class="sample-name">Alex Morgan</div><div class="sample-title">DESIGN DIRECTOR</div><div class="sample-bottom"><span>alex@arcstudio.example<br>+1 (415) 555-0142</span><span>arcstudio.example</span></div></div>
+            </div>
+            <div class="scan-laser" hidden id="scan-laser"></div>
+            <span class="preview-label" id="preview-label">A LITTLE PREVIEW OF YOUR NEXT CONNECTION</span>
+          </div>
+          <div class="scanner-caption"><svg><use href="#i-scan"/></svg><span id="camera-hint">Position a business card inside the frame</span></div>
+          <div class="camera-actions"><button class="button mint" id="camera-button"><svg><use href="#i-camera"/></svg><span>Enable camera</span><svg><use href="#i-arrow"/></svg></button><button class="camera-icon-button" id="switch-camera" aria-label="Switch camera" title="Switch camera" hidden>↻</button><button class="camera-icon-button" id="stop-camera" aria-label="Turn off camera" title="Turn off camera" hidden>■</button></div>
+          <div class="scanner-footer"><span><svg><use href="#i-shield"/></svg>On-device recognition</span><button id="try-sample">Try a sample <span>↗</span></button></div>
+        </section>
+        <aside class="scan-side">
+          <section class="how-card"><div class="section-kicker"><svg><use href="#i-spark"/></svg>A BETTER WAY TO NETWORK</div><h2>From card to contact.<br>In a few moments.</h2><ol class="steps"><li><span class="step-number">01</span><div><strong>Capture the connection</strong><p>Use your camera or upload a card.</p></div></li><li><span class="step-number">02</span><div><strong>We’ll read the details</strong><p>Name, email, company. Less typing.</p></div></li><li><span class="step-number">03</span><div><strong>Make it memorable</strong><p>Add an event and a note. Stay in touch.</p></div></li></ol><div class="tip"><span>✦</span><p><strong>A little tip</strong>Good lighting + a steady card = a sharper scan.</p></div></section>
+          <button class="upload-card" id="upload-button"><span class="upload-icon"><svg><use href="#i-upload"/></svg></span><span><strong>Already have a photo?</strong><small>Upload a card · JPG, PNG or WebP</small></span><svg><use href="#i-arrow"/></svg></button>
+          <input id="file-input" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+        </aside>
+      </div>
+      <div class="stats-strip"><div><span class="stat-icon"><svg><use href="#i-users"/></svg></span><strong id="total-stat">0</strong><span>connections made</span></div><div><span class="stat-icon"><svg><use href="#i-calendar"/></svg></span><strong id="events-stat">0</strong><span>events in your collection</span></div><div class="stats-note"><span>✳</span> Your next great connection starts here.</div></div>
+    </div>
+    <section id="contacts-section" class="contacts-section"><div class="section-header"><div><h2 id="contacts-title">Your connections <span id="contacts-count">0</span></h2><p>A familiar face, never a forgotten detail.</p></div><button id="export-all" class="button outline small"><svg><use href="#i-export"/></svg>Export CSV</button></div><div class="collection-tools"><label class="search"><svg><use href="#i-search"/></svg><input id="search" placeholder="Search name, company or email…" aria-label="Search contacts"></label><select id="event-filter" aria-label="Filter contacts by event"><option value="">All events</option></select><select id="sort" aria-label="Sort contacts"><option value="newest">Newest first</option><option value="name">Name A–Z</option></select></div><div id="contacts-list"></div></section>
+    <section id="events-section" hidden><div class="section-header"><h2>Every event, a new beginning.</h2><button id="new-event" class="button dark"><svg><use href="#i-plus"/></svg>Set current event</button></div><div class="events-grid" id="events-list"></div></section>
+    <footer class="page-footer"><span>Built for the people you haven’t met yet.</span><span>MEET SOMETHING NEW. <span>↗</span></span></footer>
+  </main>
+</div>
+<dialog id="contact-dialog"><form id="contact-form"><div class="dialog-header"><div><p class="eyebrow" id="dialog-eyebrow">A NEW CONNECTION</p><h2 id="dialog-title">Make it a keeper.</h2></div><button type="button" class="icon-button close-dialog" aria-label="Close"><svg><use href="#i-close"/></svg></button></div><div class="review-notice" id="review-notice">Review the details before saving your contact.</div><img id="review-image" alt="Business card to review" hidden><input type="hidden" name="id"><div class="form-grid"><label>Full name <span>*</span><input name="name" required maxlength="150" autocomplete="name" placeholder="Alex Morgan"></label><label>Company<input name="company" maxlength="150" placeholder="Arc Studio"></label><label>Job title<input name="title" maxlength="150" placeholder="Design Director"></label><label>Email<input name="email" type="email" maxlength="254" placeholder="alex@company.com"></label><label>Phone<input name="phone" type="tel" maxlength="80" placeholder="+1 (415) 555-0142"></label><label>Website<input name="website" maxlength="250" placeholder="company.com"></label><label class="full">Event<input name="event" maxlength="120" placeholder="Where did you meet?" list="event-options"></label><label class="full">Notes<textarea name="notes" rows="3" maxlength="2000" placeholder="What did you talk about? What’s next?"></textarea></label></div><p class="form-error" id="form-error" role="alert"></p><div class="dialog-actions"><button type="button" id="delete-contact" class="text-danger" hidden>Delete contact</button><button type="button" id="download-vcard" class="button outline" hidden>Download vCard</button><button type="submit" class="button dark" id="save-contact"><svg><use href="#i-check"/></svg>Save connection</button></div></form></dialog>
+<dialog id="event-dialog"><form id="event-form"><div class="dialog-header"><div><p class="eyebrow">BE PRESENT. STAY CONNECTED.</p><h2>Where are you networking?</h2></div><button type="button" class="icon-button close-dialog" aria-label="Close"><svg><use href="#i-close"/></svg></button></div><p class="dialog-description">New scans will be tagged with this event.</p><label class="event-input-label">Event name<input id="event-name" required maxlength="120" placeholder="e.g. Design Forward 2026" list="event-options"></label><div class="dialog-actions"><button type="submit" class="button dark">Set event <svg><use href="#i-arrow"/></svg></button></div></form></dialog>
+<datalist id="event-options"></datalist><div id="toast" role="status" aria-live="polite"></div>
 {% endblock %}
